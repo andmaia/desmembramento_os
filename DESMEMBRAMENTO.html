@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Desmembramento de OS</title>
+<style>
+body{font-family:Arial;background:#f4f6f8;padding:20px}
+.card{background:#fff;padding:15px;border-radius:10px;margin-bottom:15px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+.field{display:flex;flex-direction:column;margin:6px 10px 6px 0}
+.row{display:flex;flex-wrap:wrap;align-items:flex-end}
+input,select{padding:6px;margin-top:4px;width:170px}
+button{padding:8px 12px;margin:6px;border-radius:6px;border:none;cursor:pointer}
+.os{border:1px solid #ddd;padding:10px;border-radius:8px;margin-top:10px}
+label{font-size:13px;font-weight:bold}
+h4{margin-bottom:6px}
+</style>
+</head>
+<body>
+
+<div class="card">
+<h2>OS Inicial</h2>
+<div class="row">
+  <div class="field">
+    <label>Entrada</label>
+    <input id="entrada" type="number" oninput="calcInicial()">
+  </div>
+  <div class="field">
+    <label>Saída</label>
+    <input id="saida" type="number" oninput="calcInicial()">
+  </div>
+  <div class="field">
+    <label>Umidade (%)</label>
+    <input id="umidade" type="number" oninput="calcInicial()">
+  </div>
+</div>
+
+<div class="row">
+  <div class="field">
+    <label>Peso bruto (Entrada - Saída)</label>
+    <input id="PesoLiquidoUmido" type="number" readonly>
+  </div>
+  <div class="field">
+    <label>Peso seco (desconto de umidade)</label>
+    <input id="PesoLiquidoSeco" type="number" readonly>
+  </div>
+</div>
+</div>
+
+<div class="card">
+<h3>Campos a manter nas novas OS</h3>
+<label><input type="checkbox" id="keepEntrada"> Entrada</label>
+<label><input type="checkbox" id="keepSaida"> Saída</label>
+<label><input type="checkbox" id="keepUmidade"> Umidade</label>
+
+<div class="row" style="margin-top:10px">
+  <div class="field">
+    <label>Valor base</label>
+    <input id="valorBase" type="number">
+  </div>
+  <div class="field">
+    <label>Tipo de valor</label>
+    <select id="tipoBase">
+      <option value="umido">Peso bruto</option>
+      <option value="seco">Peso seco</option>
+    </select>
+  </div>
+</div>
+
+<button onclick="addOS()">➕ Adicionar OS</button>
+<button onclick="clearAll()">🗑 Apagar Desmembramento</button>
+</div>
+
+<div id="osContainer"></div>
+
+<script>
+let osCount = 0;
+
+function calcularPesoSeco(entrada, saida, umidade){
+  const fator = 1 - (umidade/100);
+  return Math.ceil((entrada - saida) * fator);
+}
+
+function calcularPesoBruto(entrada, saida){
+  return Math.ceil(entrada - saida);
+}
+
+function addOS(){
+  osCount++;
+
+  const entrada = document.getElementById('entrada').value;
+  const saida = document.getElementById('saida').value;
+  const umidade = document.getElementById('umidade').value;
+
+  const keepEntrada = document.getElementById('keepEntrada').checked;
+  const keepSaida = document.getElementById('keepSaida').checked;
+  const keepUmidade = document.getElementById('keepUmidade').checked;
+
+  const eVal = keepEntrada ? entrada : '';
+  const sVal = keepSaida ? saida : '';
+  const uVal = keepUmidade ? umidade : '';
+
+  const valorBase = parseFloat(document.getElementById('valorBase').value || 0);
+  const tipoBase = document.getElementById('tipoBase').value;
+
+  let entradaCalc = eVal;
+  let pesoBrutoCalc = 0;
+  let pesoSecoCalc = 0;
+
+  if(valorBase > 0){
+    const fator = 1 - (uVal/100);
+
+    if(tipoBase === 'umido'){
+      pesoBrutoCalc = Math.ceil(valorBase);
+      pesoSecoCalc = Math.ceil(valorBase * fator);
+      entradaCalc = Math.ceil(pesoBrutoCalc + parseFloat(sVal || 0));
+    } else {
+      pesoSecoCalc = Math.ceil(valorBase);
+      pesoBrutoCalc = Math.ceil(valorBase / fator);
+      entradaCalc = Math.ceil(pesoBrutoCalc + parseFloat(sVal || 0));
+    }
+  }
+
+  const div = document.createElement('div');
+  div.className = 'os';
+  div.innerHTML = `
+    <h4>OS ${osCount}</h4>
+
+    <div class="row">
+      <div class="field">
+        <label>Entrada</label>
+        <input class="entrada" type="number" value="${entradaCalc}">
+      </div>
+      <div class="field">
+        <label>Saída</label>
+        <input class="saida" type="number" value="${sVal}">
+      </div>
+      <div class="field">
+        <label>Umidade (%)</label>
+        <input class="umidade" type="number" value="${uVal}">
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Peso líquido úmido</label>
+        <input class="pesoUmido" type="number" value="${pesoBrutoCalc}" oninput="recalcFromBruto(this)">
+      </div>
+      <div class="field">
+        <label>Peso líquido seco</label>
+        <input class="pesoSeco" type="number" value="${pesoSecoCalc}" oninput="recalcFromSeco(this)">
+      </div>
+    </div>
+
+    <button onclick="removeOS(this)">❌ Remover OS</button>
+  `;
+
+  document.getElementById('osContainer').appendChild(div);
+}
+
+function recalcFromBruto(input){
+  const os = input.parentElement.parentElement;
+  const pesoBruto = parseFloat(os.querySelector('.pesoUmido').value || 0);
+  const umidade = parseFloat(os.querySelector('.umidade').value || 0);
+  const saida = parseFloat(os.querySelector('.saida').value || 0);
+
+  if(!pesoBruto) return;
+
+  const fator = 1 - (umidade/100);
+  const pesoSeco = Math.ceil(pesoBruto * fator);
+  const entrada = Math.ceil(pesoBruto + saida);
+
+  os.querySelector('.pesoSeco').value = pesoSeco;
+  os.querySelector('.entrada').value = entrada;
+}
+
+function recalcFromSeco(input){
+  const os = input.parentElement.parentElement;
+  const pesoSeco = parseFloat(os.querySelector('.pesoSeco').value || 0);
+  const umidade = parseFloat(os.querySelector('.umidade').value || 0);
+  const saida = parseFloat(os.querySelector('.saida').value || 0);
+
+  if(!pesoSeco) return;
+
+  const fator = 1 - (umidade/100);
+  const pesoBruto = Math.ceil(pesoSeco / fator);
+  const entrada = Math.ceil(pesoBruto + saida);
+
+  os.querySelector('.pesoUmido').value = pesoBruto;
+  os.querySelector('.entrada').value = entrada;
+}
+
+function removeOS(btn){
+  btn.parentElement.remove();
+}
+
+function calcInicial(){
+  const entrada = parseFloat(document.getElementById('entrada').value || 0);
+  const saida = parseFloat(document.getElementById('saida').value || 0);
+  const umidade = parseFloat(document.getElementById('umidade').value || 0);
+
+  if(!entrada || !saida){
+    document.getElementById('PesoLiquidoUmido').value = '';
+    document.getElementById('PesoLiquidoSeco').value = '';
+    return;
+  }
+
+  const pesoBruto = calcularPesoBruto(entrada, saida);
+  const pesoSeco = calcularPesoSeco(entrada, saida, umidade);
+
+  document.getElementById('PesoLiquidoUmido').value = pesoBruto;
+  document.getElementById('PesoLiquidoSeco').value = pesoSeco;
+}
+
+function clearAll(){
+  document.getElementById('osContainer').innerHTML = '';
+  osCount = 0;
+}
+</script>
+
+</body>
+</html>
