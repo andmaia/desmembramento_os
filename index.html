@@ -29,7 +29,7 @@ h4{margin-bottom:6px}
     <input id="saida" type="number" oninput="calcInicial()">
   </div>
   <div class="field">
-    <label>Umidade (%)</label>
+    <label>Desconto (%)</label>
     <input id="umidade" type="number" oninput="calcInicial()">
   </div>
 </div>
@@ -50,7 +50,7 @@ h4{margin-bottom:6px}
 <h3>Campos a manter nas novas OS</h3>
 <label><input type="checkbox" id="keepEntrada"> Entrada</label>
 <label><input type="checkbox" id="keepSaida"> Saída</label>
-<label><input type="checkbox" id="keepUmidade"> Umidade</label>
+<label><input type="checkbox" id="keepUmidade"> Desconto %</label>
 
 <div class="row" style="margin-top:10px">
   <div class="field">
@@ -60,8 +60,8 @@ h4{margin-bottom:6px}
   <div class="field">
     <label>Tipo de valor</label>
     <select id="tipoBase">
-      <option value="umido">Peso bruto</option>
-      <option value="seco">Peso seco</option>
+      <option value="umido">Peso líquido úmido</option>
+      <option value="seco">Peso líquido seco</option>
     </select>
   </div>
 </div>
